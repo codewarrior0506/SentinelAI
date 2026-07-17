@@ -1,0 +1,37 @@
+# Virtual Environment
+venv/
+
+# Python Cache
+__pycache__/
+*.pyc
+
+# Environment Variables
+.env
+
+# Flask Instance
+instance/
+
+# VS Code
+.vscode/
+
+# macOS
+.DS_Store
+
+# Logs
+*.log
+
+# SQLite Database
+*.db
+
+# Uploads
+app/static/uploads/
+
+# Testing
+.pytest_cache/
+
+# Distribution
+build/
+dist/
+
+# IDE
+.idea/
