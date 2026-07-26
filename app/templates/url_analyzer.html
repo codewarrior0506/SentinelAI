@@ -1,0 +1,86 @@
+{% extends "base.html" %}
+
+{% block title %}
+URL Threat Analyzer
+{% endblock %}
+
+{% block content %}
+
+{% include "components/navbar.html" %}
+
+<div class="container py-5 mt-5">
+
+    <div class="row justify-content-center">
+
+        <div class="col-lg-8">
+
+            <div class="card shadow-lg border-0">
+
+                <div class="card-body p-5">
+
+                    <h2 class="fw-bold mb-3">
+                        URL Threat Analyzer
+                    </h2>
+
+                    <p class="text-muted">
+                        Analyze any URL for basic security indicators.
+                    </p>
+
+                    <form method="POST">
+
+                        <div class="mb-3">
+
+                            <label class="form-label">
+                                Enter URL
+                            </label>
+
+                            <input
+                                type="text"
+                                name="url"
+                                class="form-control form-control-lg"
+                                placeholder="https://example.com"
+                                required>
+
+                        </div>
+
+                        <button class="btn btn-primary btn-lg">
+                            Analyze URL
+                        </button>
+
+                    </form>
+
+                </div>
+
+            </div>
+
+        </div>
+
+    </div>
+
+</div>
+
+{% if result is not none %}
+
+<hr class="my-4">
+
+{% if result %}
+
+<div class="alert alert-success">
+
+    ✅ Valid URL
+
+</div>
+
+{% else %}
+
+<div class="alert alert-danger">
+
+    ❌ Invalid URL
+
+</div>
+
+{% endif %}
+
+{% endif %}
+
+{% endblock %}
