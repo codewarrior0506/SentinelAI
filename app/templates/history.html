@@ -1,0 +1,323 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+
+    <meta charset="UTF-8">
+    <title>SentinelAI - Scan History</title>
+
+    <style>
+
+        *{
+            margin:0;
+            padding:0;
+            box-sizing:border-box;
+        }
+
+        body{
+            font-family:Arial, Helvetica, sans-serif;
+            background:#eef3f8;
+            padding:40px;
+        }
+
+        h1{
+            text-align:center;
+            color:#1d3557;
+            margin-bottom:30px;
+        }
+
+        /* Search Box */
+
+        .search-box{
+            display:flex;
+            justify-content:center;
+            margin-bottom:30px;
+        }
+
+        .search-box form{
+            display:flex;
+            gap:10px;
+        }
+
+        .search-box input{
+
+            width:400px;
+            padding:12px;
+            border:1px solid #ccc;
+            border-radius:8px;
+            outline:none;
+            font-size:15px;
+
+        }
+
+        .search-box button{
+
+            padding:12px 20px;
+            border:none;
+            border-radius:8px;
+            background:#2563eb;
+            color:white;
+            cursor:pointer;
+            font-size:15px;
+
+        }
+
+        .search-box button:hover{
+
+            background:#1d4ed8;
+
+        }
+
+        /* Dashboard Cards */
+
+        .cards{
+
+            display:grid;
+            grid-template-columns:repeat(auto-fit,minmax(220px,1fr));
+            gap:20px;
+            margin-bottom:35px;
+
+        }
+
+        .card{
+
+            padding:25px;
+            border-radius:15px;
+            color:white;
+            box-shadow:0 10px 25px rgba(0,0,0,.15);
+            transition:.3s;
+
+        }
+
+        .card:hover{
+
+            transform:translateY(-6px);
+
+        }
+
+        .card h3{
+
+            font-size:18px;
+            margin-bottom:20px;
+
+        }
+
+        .card h2{
+
+            font-size:42px;
+            margin-bottom:10px;
+
+        }
+
+        .card p{
+
+            opacity:.9;
+
+        }
+
+        .total{
+
+            background:linear-gradient(135deg,#4f46e5,#3b82f6);
+
+        }
+
+        .safe{
+
+            background:linear-gradient(135deg,#10b981,#34d399);
+
+        }
+
+        .suspicious{
+
+            background:linear-gradient(135deg,#f59e0b,#fbbf24);
+
+        }
+
+        .danger{
+
+            background:linear-gradient(135deg,#ef4444,#dc2626);
+
+        }
+
+        /* Table */
+
+        table{
+
+            width:100%;
+            border-collapse:collapse;
+            background:white;
+            border-radius:12px;
+            overflow:hidden;
+            box-shadow:0 5px 20px rgba(0,0,0,.08);
+
+        }
+
+        th{
+
+            background:#1d3557;
+            color:white;
+            padding:15px;
+
+        }
+
+        td{
+
+            padding:14px;
+            border-bottom:1px solid #eee;
+
+        }
+
+        tr:hover{
+
+            background:#f7fbff;
+
+        }
+
+        /* Status Colors */
+
+        .status-safe{
+
+            color:#16a34a;
+            font-weight:bold;
+
+        }
+
+        .status-suspicious{
+
+            color:#f59e0b;
+            font-weight:bold;
+
+        }
+
+        .status-dangerous{
+
+            color:#dc2626;
+            font-weight:bold;
+
+        }
+
+    </style>
+
+</head>
+
+<body>
+
+<h1>🛡️ SentinelAI Scan History</h1>
+
+<div class="search-box">
+
+    <form method="GET" action="/history">
+
+        <input
+            type="text"
+            name="search"
+            placeholder="Search scanned URL..."
+            value="{{ search }}">
+
+        <button type="submit">Search</button>
+
+    </form>
+
+</div>
+
+<div class="cards">
+
+    <div class="card total">
+
+        <h3>📊 Total Scans</h3>
+
+        <h2>{{ total }}</h2>
+
+        <p>URLs analyzed</p>
+
+    </div>
+
+    <div class="card safe">
+
+        <h3>🛡️ Safe URLs</h3>
+
+        <h2>{{ safe }}</h2>
+
+        <p>No threats detected</p>
+
+    </div>
+
+    <div class="card suspicious">
+
+        <h3>⚠️ Suspicious</h3>
+
+        <h2>{{ suspicious }}</h2>
+
+        <p>Requires review</p>
+
+    </div>
+
+    <div class="card danger">
+
+        <h3>🚨 Dangerous</h3>
+
+        <h2>{{ dangerous }}</h2>
+
+        <p>Potential phishing</p>
+
+    </div>
+
+</div>
+
+<table>
+
+    <tr>
+
+        <th>ID</th>
+        <th>URL</th>
+        <th>Risk Score</th>
+        <th>Status</th>
+        <th>Registrar</th>
+        <th>Domain Age</th>
+        <th>Scan Time</th>
+
+    </tr>
+
+    {% for row in history %}
+
+    <tr>
+
+        <td>{{ row["id"] }}</td>
+
+        <td>{{ row["url"] }}</td>
+
+        <td>{{ row["risk_score"] }}</td>
+
+        <td>
+
+            {% if row["status"]=="Safe" %}
+
+                <span class="status-safe">{{ row["status"] }}</span>
+
+            {% elif row["status"]=="Suspicious" %}
+
+                <span class="status-suspicious">{{ row["status"] }}</span>
+
+            {% else %}
+
+                <span class="status-dangerous">{{ row["status"] }}</span>
+
+            {% endif %}
+
+        </td>
+
+        <td>{{ row["registrar"] }}</td>
+
+        <td>{{ row["domain_age"] }}</td>
+
+        <td>{{ row["scan_time"] }}</td>
+
+    </tr>
+
+    {% endfor %}
+
+</table>
+
+</body>
+
+</html>

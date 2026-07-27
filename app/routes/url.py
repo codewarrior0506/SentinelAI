@@ -1,6 +1,6 @@
 from flask import Blueprint, render_template, request
 
-from app.services.url_service import validate_url
+from app.services.url_service import analyze_url
 
 url = Blueprint("url", __name__)
 
@@ -9,14 +9,18 @@ url = Blueprint("url", __name__)
 def url_analyzer():
 
     result = None
+    submitted_url = ""
 
     if request.method == "POST":
 
-        user_url = request.form.get("url")
+        submitted_url = request.form.get("url")
+        result = analyze_url(submitted_url)
 
-        result = validate_url(user_url)
+        user_url = request.form.get("url")
+        result = analyze_url(user_url)
 
     return render_template(
-        "url_analyzer.html",
-        result=result
-    )
+    "url_analyzer.html",
+    result=result,
+    submitted_url=submitted_url
+)

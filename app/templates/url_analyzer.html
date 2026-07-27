@@ -35,11 +35,12 @@ URL Threat Analyzer
                             </label>
 
                             <input
-                                type="text"
-                                name="url"
-                                class="form-control form-control-lg"
-                                placeholder="https://example.com"
-                                required>
+                               type="text"
+                               name="url"
+                               class="form-control form-control-lg"
+                               placeholder="https://example.com"
+                               value="{{ submitted_url }}"
+                               required>
 
                         </div>
 
@@ -48,6 +49,231 @@ URL Threat Analyzer
                         </button>
 
                     </form>
+
+                    {% if result %}
+
+<hr class="my-4">
+
+{% if result.valid == False %}
+
+<div class="alert alert-danger">
+
+    Invalid URL
+
+</div>
+
+{% else %}
+
+<div class="card mt-4 shadow">
+
+    <div class="card-body">
+
+        <h3 class="mb-4">
+            Security Report
+        </h3>
+
+        <h6>Risk Score</h6>
+
+        <div class="progress mb-3" style="height:25px;">
+
+            <div
+                class="progress-bar
+                {% if result.status == 'Safe' %}
+                    bg-success
+                {% elif result.status == 'Suspicious' %}
+                    bg-warning
+                {% else %}
+                    bg-danger
+                {% endif %}"
+
+                role="progressbar"
+
+                style="width: {{ result.risk_score }}%;">
+
+                {{ result.risk_score }}%
+
+            </div>
+
+        </div>
+
+        <div class="alert
+            {% if result.status == 'Safe' %}
+                alert-success
+            {% elif result.status == 'Suspicious' %}
+                alert-warning
+            {% else %}
+                alert-danger
+            {% endif %}">
+
+            <strong>Status:</strong>
+
+            {{ result.status }}
+
+        </div>
+
+        <table class="table table-striped">
+
+            <tr>
+
+                <th>Domain</th>
+
+                <td>{{ result.domain }}</td>
+
+            </tr>
+
+            <tr>
+
+                <th>IP Address</th>
+
+                <td>{{ result.ip_address }}</td>
+
+            </tr>
+
+            <tr>
+
+                <th>DNS Resolution</th>
+
+                <td>
+
+                    {% if result.dns_status %}
+
+                        ✅ Success
+
+                    {% else %}
+
+                        ❌ Failed
+
+                    {% endif %}
+
+                </td>
+
+            </tr>
+
+            <tr>
+                 <th>Registrar</th>
+                 <td>{{ result.registrar or "N/A" }}</td>
+            </tr>
+
+            <tr>
+                <th>Domain Age</th>
+                <td>
+                     {% if result.domain_age %}
+                        {{ result.domain_age }} days
+                     {% else %}
+                        N/A
+                     {% endif %}
+                </td>
+            </tr>
+
+            <tr>
+                 <th>Created On</th>
+                 <td>{{ result.creation_date or "N/A" }}</td>
+            </tr>
+
+            <tr>
+                 <th>Expires On</th>
+                 <td>{{ result.expiration_date or "N/A" }}</td>
+            </tr>
+
+            <tr>
+
+                <th>Protocol</th>
+
+                <td>{{ result.scheme }}</td>
+
+            </tr>
+
+            <tr>
+
+                <th>HTTPS</th>
+
+                <td>
+
+                    {% if result.https %}
+
+                        ✅ Enabled
+
+                    {% else %}
+
+                        ❌ Disabled
+
+                    {% endif %}
+
+                </td>
+
+            </tr>
+
+            <tr>
+
+                <th>Subdomains</th>
+
+                <td>{{ result.subdomains }}</td>
+
+            </tr>
+
+            <tr>
+
+                <th>Uses IP Address</th>
+
+                <td>
+
+                    {% if result.uses_ip %}
+
+                        ⚠ Yes
+
+                    {% else %}
+
+                        No
+
+                    {% endif %}
+
+                </td>
+
+            </tr>
+
+            <tr>
+
+                <th>Keywords</th>
+
+                <td>
+
+                    {% if result.keywords %}
+
+                        {{ result.keywords | join(", ") }}
+
+                    {% else %}
+
+                        None
+
+                    {% endif %}
+
+                </td>
+
+            </tr>
+
+        </table>
+
+        <h5 class="mt-4">
+
+            Recommendation
+
+        </h5>
+
+        <p>
+
+            {{ result.recommendation }}
+
+        </p>
+
+    </div>
+
+</div>
+
+{% endif %}
+
+{% endif %}
+
+{% endblock %}
 
                 </div>
 
@@ -59,28 +285,3 @@ URL Threat Analyzer
 
 </div>
 
-{% if result is not none %}
-
-<hr class="my-4">
-
-{% if result %}
-
-<div class="alert alert-success">
-
-    ✅ Valid URL
-
-</div>
-
-{% else %}
-
-<div class="alert alert-danger">
-
-    ❌ Invalid URL
-
-</div>
-
-{% endif %}
-
-{% endif %}
-
-{% endblock %}
