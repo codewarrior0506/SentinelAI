@@ -91,6 +91,56 @@ document.addEventListener("DOMContentLoaded", function () {
 
 });
 
+const trendCtx = document.getElementById("trendChart");
+
+if (trendCtx) {
+
+    const labels = dashboardData.scanTrends.map(item => item.day);
+
+    const values = dashboardData.scanTrends.map(item => item.scans);
+
+    new Chart(trendCtx, {
+
+        type: "line",
+
+        data: {
+
+            labels: labels,
+
+            datasets: [{
+
+                label: "Scans",
+
+                data: values,
+
+                fill: false,
+
+                tension: 0.3
+
+            }]
+
+        },
+
+        options: {
+
+            responsive: true,
+
+            plugins: {
+
+                legend: {
+
+                    display: true
+
+                }
+
+            }
+
+        }
+
+    });
+
+}
+
 /* ---------- Animated Counters ---------- */
 
 const counters = document.querySelectorAll(".counter");

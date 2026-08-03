@@ -111,6 +111,13 @@ body{
 
 }
 
+/* Reusable spacing between dashboard sections */
+
+.section{
+
+    margin-top:40px;
+
+}
 .chart-card{
 
     background:white;
@@ -133,6 +140,64 @@ canvas{
 
 }
 
+.info-grid{
+
+    display:grid;
+
+    grid-template-columns: repeat(auto-fit, minmax(350px,1fr));
+
+    gap:30px;
+
+    margin-top:40px;
+
+}
+
+.info-card{
+
+    background:white;
+
+    border-radius:15px;
+
+    padding:20px;
+
+    box-shadow:0 8px 20px rgba(0,0,0,.08);
+
+}
+
+.info-card h2{
+
+    margin-bottom:20px;
+
+    color:#1d3557;
+
+}
+
+.info-card table{
+
+    width:100%;
+
+    border-collapse:collapse;
+
+}
+
+.info-card th{
+
+    background:#2563eb;
+
+    color:white;
+
+    padding:10px;
+
+}
+
+.info-card td{
+
+    padding:10px;
+
+    border-bottom:1px solid #eee;
+
+}
+
 </style>
 
 </head>
@@ -148,6 +213,8 @@ canvas{
 <a href="/">Scanner</a>
 
 <a href="/history">History</a>
+
+<a href="/report">📄 Export Report</a>
 
 </div>
 
@@ -227,11 +294,117 @@ canvas{
 
 </div>
 
+<div class="section">
+
+    <div class="chart-card">
+
+        <h2>📈 Daily Scan Trend</h2>
+
+        <canvas id="trendChart"></canvas>
+
+    </div>
+
+</div>
+
+<div class="info-grid">
+
+    <div class="info-card">
+
+        <h2>🔥 Highest Risk URLs</h2>
+
+        <table>
+
+            <tr>
+                <th>URL</th>
+                <th>Risk</th>
+            </tr>
+
+            {% for item in stats.top_threats %}
+
+            <tr>
+
+                <td>{{ item["url"] }}</td>
+
+                <td>{{ item["risk_score"] }}</td>
+
+            </tr>
+
+            {% endfor %}
+
+        </table>
+
+    </div>
+
+    <div class="info-card">
+
+        <h2>🕒 Recent Activity</h2>
+
+        <table>
+
+            <tr>
+                <th>URL</th>
+                <th>Status</th>
+            </tr>
+
+            {% for item in stats.recent %}
+
+            <tr>
+
+                <td>{{ item["url"] }}</td>
+
+                <td>{{ item["status"] }}</td>
+
+            </tr>
+
+            {% endfor %}
+
+        </table>
+
+    </div>
+
+    <div class="info-card">
+
+    <h2>🌐 Top Scanned Domains</h2>
+
+    <table>
+
+        <tr>
+            <th>Domain</th>
+            <th>Scans</th>
+        </tr>
+
+        {% for domain, count in stats.top_domains %}
+
+        <tr>
+
+            <td>{{ domain }}</td>
+
+            <td>{{ count }}</td>
+
+        </tr>
+
+        {% endfor %}
+
+    </table>
+
+</div>
+
+</div>
+
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 
 <script>
 
-const dashboardData = {{ stats | tojson }};
+const dashboardData = {
+    total: {{ stats.total }},
+    safe: {{ stats.safe }},
+    suspicious: {{ stats.suspicious }},
+    dangerous: {{ stats.dangerous }},
+    avg_risk: {{ stats.avg_risk }},
+
+    scanTrends: {{ stats.scan_trends | tojson }}
+
+};
 
 </script>
 

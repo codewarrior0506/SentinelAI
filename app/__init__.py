@@ -15,10 +15,12 @@ def create_app():
     from app.routes.url import url
     from app.routes.history import history
     from app.routes.dashboard import dashboard
+    from app.routes.report import report
 
     app.register_blueprint(home)
     app.register_blueprint(url)
     app.register_blueprint(history)
     app.register_blueprint(dashboard)
+    app.register_blueprint(report)
 
     return app

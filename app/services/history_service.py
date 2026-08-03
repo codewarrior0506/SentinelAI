@@ -93,6 +93,7 @@ def get_dashboard_stats():
     conn = get_connection()
     cursor = conn.cursor()
 
+    # Summary
     cursor.execute("SELECT COUNT(*) FROM scan_history")
     total = cursor.fetchone()[0]
 
@@ -111,12 +112,84 @@ def get_dashboard_stats():
     """)
     avg_risk = cursor.fetchone()[0] or 0
 
+    # Highest Risk URLs
+    cursor.execute("""
+        SELECT url,risk_score,status
+        FROM scan_history
+        ORDER BY risk_score DESC
+        LIMIT 5
+    """)
+
+    top_threats = [dict(row) for row in cursor.fetchall()]
+
+    # Recent Activity
+    cursor.execute("""
+    SELECT
+        url,
+        risk_score,
+        status,
+        scan_time
+    FROM scan_history
+    ORDER BY scan_time DESC
+    LIMIT 5
+""")
+
+    recent = [dict(row) for row in cursor.fetchall()]
+
+    from urllib.parse import urlparse
+
+    cursor.execute("""
+        SELECT url
+        FROM scan_history
+    """)
+
+    domain_count = {}
+
+    for row in cursor.fetchall():
+
+        domain = urlparse(row["url"]).netloc
+
+        if domain.startswith("www."):
+            domain = domain[4:]
+
+        if domain:
+            domain_count[domain] = domain_count.get(domain, 0) + 1
+
+    top_domains = [
+    {
+        "domain": domain,
+        "count": count
+    }
+    for domain, count in sorted(
+        domain_count.items(),
+        key=lambda x: x[1],
+        reverse=True
+    )[:5]
+]
+
+    cursor.execute("""
+        SELECT DATE(scan_time) AS day,
+               COUNT(*) AS scans
+        FROM scan_history
+        GROUP BY DATE(scan_time)
+        ORDER BY DATE(scan_time)
+    """)
+
+    scan_trends = [dict(row) for row in cursor.fetchall()]
+
     conn.close()
 
     return {
-        "total": total,
-        "safe": safe,
-        "suspicious": suspicious,
-        "dangerous": dangerous,
-        "avg_risk": avg_risk
+
+         "total": total,
+         "safe": safe,
+         "suspicious": suspicious,
+         "dangerous": dangerous,
+         "avg_risk": avg_risk,
+
+         "top_threats": top_threats,
+         "scan_trends": scan_trends,
+         "recent": recent,
+         "top_domains": top_domains
+
     }
