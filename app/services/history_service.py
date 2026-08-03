@@ -124,15 +124,15 @@ def get_dashboard_stats():
 
     # Recent Activity
     cursor.execute("""
-    SELECT
-        url,
-        risk_score,
-        status,
-        scan_time
-    FROM scan_history
-    ORDER BY scan_time DESC
-    LIMIT 5
-""")
+        SELECT
+            url,
+            risk_score,
+            status,
+            scan_time
+        FROM scan_history
+        ORDER BY scan_time DESC
+        LIMIT 5
+    """)
 
     recent = [dict(row) for row in cursor.fetchall()]
 
@@ -156,16 +156,16 @@ def get_dashboard_stats():
             domain_count[domain] = domain_count.get(domain, 0) + 1
 
     top_domains = [
-    {
-        "domain": domain,
-        "count": count
-    }
-    for domain, count in sorted(
-        domain_count.items(),
-        key=lambda x: x[1],
-        reverse=True
-    )[:5]
-]
+        {
+           "domain": domain,
+           "count": count
+        }
+        for domain, count in sorted(
+            domain_count.items(),
+            key=lambda x: x[1],
+            reverse=True
+        )[:5]
+    ]
 
     cursor.execute("""
         SELECT DATE(scan_time) AS day,
@@ -176,6 +176,7 @@ def get_dashboard_stats():
     """)
 
     scan_trends = [dict(row) for row in cursor.fetchall()]
+
 
     conn.close()
 

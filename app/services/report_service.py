@@ -5,8 +5,7 @@ from reportlab.lib import colors
 from reportlab.lib.enums import TA_CENTER
 from reportlab.lib.styles import getSampleStyleSheet
 from reportlab.lib.units import inch
-from reportlab.lib.enums import TA_CENTER, TA_RIGHT
-from reportlab.pdfgen import canvas
+
 from reportlab.platypus import (
     SimpleDocTemplate,
     Paragraph,
@@ -17,122 +16,114 @@ from reportlab.platypus import (
 )
 
 
-def get_threat_level(avg_risk):
+# ---------------------------------------------------------
+# Theme Colors
+# ---------------------------------------------------------
 
-    if avg_risk < 30:
-        return "LOW", colors.green
+PRIMARY = colors.HexColor("#1E3A8A")
+SUCCESS = colors.HexColor("#10B981")
+WARNING = colors.HexColor("#F59E0B")
+DANGER = colors.HexColor("#DC2626")
 
-    elif avg_risk < 70:
-        return "MEDIUM", colors.orange
+LIGHT = colors.whitesmoke
+ALT = colors.beige
 
-    return "HIGH", colors.red
+
+# ---------------------------------------------------------
+# Threat Level
+# ---------------------------------------------------------
+
+def get_threat_level(stats):
+
+    dangerous = stats["dangerous"]
+    suspicious = stats["suspicious"]
+    avg = stats["avg_risk"]
+
+    if dangerous >= 5 or avg >= 70:
+        return "HIGH", DANGER
+
+    if dangerous >= 1 or suspicious >= 3 or avg >= 30:
+        return "MEDIUM", WARNING
+
+    return "LOW", SUCCESS
+
+
+# ---------------------------------------------------------
+# Footer
+# ---------------------------------------------------------
 
 def add_page_number(canvas, doc):
+
     canvas.saveState()
 
     canvas.setFont("Helvetica", 9)
+
     canvas.setFillColor(colors.grey)
 
-    footer_text = (
-        f"SentinelAI | AI-Powered Cyber Fraud Early Warning Platform"
-    )
-
     canvas.drawString(
+
         doc.leftMargin,
+
         20,
-        footer_text
+
+        "SentinelAI | AI-Powered Cyber Fraud Early Warning Platform"
+
     )
 
     canvas.drawRightString(
+
         doc.pagesize[0] - doc.rightMargin,
+
         20,
+
         f"Page {doc.page}"
+
     )
 
     canvas.restoreState()
 
-def generate_security_report(stats):
 
-    buffer = BytesIO()
+# ---------------------------------------------------------
+# Styles
+# ---------------------------------------------------------
 
-    doc = SimpleDocTemplate(
-        buffer,
-        rightMargin=40,
-        leftMargin=40,
-        topMargin=40,
-        bottomMargin=40,
-    )
+def build_styles():
 
     styles = getSampleStyleSheet()
 
-    title_style = styles["Title"]
-    title_style.alignment = TA_CENTER
-    title_style.textColor = colors.darkblue
+    title = styles["Title"]
+    title.alignment = TA_CENTER
+    title.textColor = PRIMARY
 
-    heading_style = styles["Heading2"]
-    heading_style.textColor = colors.darkblue
+    heading = styles["Heading2"]
+    heading.textColor = PRIMARY
 
-    normal = styles["BodyText"]
+    body = styles["BodyText"]
 
-    elements = []
+    footer = styles["BodyText"]
+    footer.alignment = TA_CENTER
+    footer.textColor = colors.grey
 
-    # -------------------------------------------------
-    # Title
-    # -------------------------------------------------
+    return {
 
-    elements.append(
-        Paragraph("🛡 <b>SentinelAI</b>", title_style)
-    )
+        "title": title,
 
-    elements.append(
-        Paragraph(
-            "AI-Powered Cyber Fraud Early Warning Platform",
-            styles["Heading3"],
-        )
-    )
+        "heading": heading,
 
-    elements.append(Spacer(1, 0.2 * inch))
+        "body": body,
 
-    elements.append(
-        Paragraph(
-            "<b>SECURITY ASSESSMENT REPORT</b>",
-            heading_style,
-        )
-    )
+        "footer": footer
 
-    elements.append(
-        Paragraph(
-            datetime.now().strftime(
-                "Generated on %d %B %Y | %I:%M %p"
-            ),
-            normal,
-        )
-    )
+    }
 
-    elements.append(Spacer(1, 0.3 * inch))
 
-    elements.append(
-        HRFlowable(
-            width="100%",
-            thickness=2,
-            color=colors.HexColor("#1E3A8A"),
-        )
-    )
+# ---------------------------------------------------------
+# Summary Table
+# ---------------------------------------------------------
 
-    elements.append(Spacer(1, 0.25 * inch))
+def create_summary_table(stats):
 
-    # -------------------------------------------------
-    # Executive Summary
-    # -------------------------------------------------
-
-    elements.append(
-        Paragraph(
-            "<b>EXECUTIVE SUMMARY</b>",
-            heading_style,
-        )
-    )
-
-    summary = [
+    data = [
 
         ["Metric", "Value"],
 
@@ -144,73 +135,162 @@ def generate_security_report(stats):
 
         ["Dangerous URLs", stats["dangerous"]],
 
-        ["Average Risk Score", stats["avg_risk"]],
+        ["Average Risk Score", stats["avg_risk"]]
 
     ]
 
-    summary_table = Table(summary, colWidths=[250, 180])
+    table = Table(
 
-    summary_table.setStyle(
+        data,
+
+        colWidths=[260, 170]
+
+    )
+
+    table.setStyle(
 
         TableStyle([
 
-            ("BACKGROUND", (0, 0), (-1, 0), colors.HexColor("#1E3A8A")),
+            ("BACKGROUND", (0,0), (-1,0), PRIMARY),
 
-            ("TEXTCOLOR", (0, 0), (-1, 0), colors.white),
+            ("TEXTCOLOR", (0,0), (-1,0), colors.white),
 
-            ("FONTNAME", (0, 0), (-1, 0), "Helvetica-Bold"),
+            ("FONTNAME", (0,0), (-1,0), "Helvetica-Bold"),
 
-            ("BOTTOMPADDING", (0, 0), (-1, 0), 10),
+            ("BOTTOMPADDING", (0,0), (-1,0), 10),
 
-            ("BACKGROUND", (0, 1), (-1, -1), colors.whitesmoke),
+            ("GRID", (0,0), (-1,-1), .5, colors.grey),
 
-            ("GRID", (0, 0), (-1, -1), 0.5, colors.grey),
+            ("BACKGROUND", (0,1), (-1,-1), LIGHT),
 
-            ("ALIGN", (1, 1), (-1, -1), "CENTER"),
+            ("ALIGN", (1,1), (-1,-1), "CENTER"),
 
         ])
 
     )
 
-    elements.append(summary_table)
+    return table
 
-    elements.append(Spacer(1, 0.3 * inch))
+def generate_security_report(stats):
 
-    # -------------------------------------------------
-    # Threat Level
-    # -------------------------------------------------
+    buffer = BytesIO()
 
-    level, color = get_threat_level(stats["avg_risk"])
+    doc = SimpleDocTemplate(
+        buffer,
+        rightMargin=40,
+        leftMargin=40,
+        topMargin=40,
+        bottomMargin=40
+    )
+
+    styles = build_styles()
+
+    elements = []
+
+    # =====================================================
+    # HEADER
+    # =====================================================
+
+    elements.append(
+        Paragraph(
+            "🛡 <b>SentinelAI</b>",
+            styles["title"]
+        )
+    )
+
+    elements.append(
+        Paragraph(
+            "AI-Powered Cyber Fraud Early Warning Platform",
+            styles["heading"]
+        )
+    )
+
+    elements.append(Spacer(1, 0.15 * inch))
+
+    elements.append(
+        HRFlowable(
+            width="100%",
+            thickness=2,
+            color=PRIMARY
+        )
+    )
+
+    elements.append(Spacer(1, 0.25 * inch))
+
+    elements.append(
+        Paragraph(
+            "<b>SECURITY ASSESSMENT REPORT</b>",
+            styles["heading"]
+        )
+    )
+
+    elements.append(
+        Paragraph(
+            datetime.now().strftime(
+                "Generated on %d %B %Y | %I:%M %p"
+            ),
+            styles["body"]
+        )
+    )
+
+    elements.append(Spacer(1, 0.35 * inch))
+
+    # =====================================================
+    # EXECUTIVE SUMMARY
+    # =====================================================
+
+    elements.append(
+        Paragraph(
+            "<b>EXECUTIVE SUMMARY</b>",
+            styles["heading"]
+        )
+    )
+
+    elements.append(Spacer(1, 8))
+
+    elements.append(
+        create_summary_table(stats)
+    )
+
+    elements.append(Spacer(1, 0.35 * inch))
+
+    # =====================================================
+    # THREAT LEVEL
+    # =====================================================
+
+    level, colour = get_threat_level(stats)
 
     elements.append(
         Paragraph(
             "<b>OVERALL THREAT LEVEL</b>",
-            heading_style,
+            styles["heading"]
         )
     )
 
+    elements.append(Spacer(1, 8))
+
     threat_table = Table(
         [[level]],
-        colWidths=[150],
+        colWidths=[170]
     )
 
     threat_table.setStyle(
 
         TableStyle([
 
-            ("BACKGROUND", (0, 0), (0, 0), color),
+            ("BACKGROUND", (0,0), (0,0), colour),
 
-            ("TEXTCOLOR", (0, 0), (0, 0), colors.white),
+            ("TEXTCOLOR", (0,0), (0,0), colors.white),
 
-            ("ALIGN", (0, 0), (0, 0), "CENTER"),
+            ("ALIGN", (0,0), (0,0), "CENTER"),
 
-            ("FONTNAME", (0, 0), (0, 0), "Helvetica-Bold"),
+            ("FONTNAME", (0,0), (0,0), "Helvetica-Bold"),
 
-            ("FONTSIZE", (0, 0), (0, 0), 16),
+            ("FONTSIZE", (0,0), (0,0), 18),
 
-            ("BOTTOMPADDING", (0, 0), (0, 0), 12),
+            ("BOTTOMPADDING", (0,0), (0,0), 12),
 
-            ("TOPPADDING", (0, 0), (0, 0), 12),
+            ("TOPPADDING", (0,0), (0,0), 12),
 
         ])
 
@@ -218,354 +298,420 @@ def generate_security_report(stats):
 
     elements.append(threat_table)
 
-    elements.append(Spacer(1, 0.5 * inch))
+    elements.append(Spacer(1, 0.40 * inch))
 
-    # -------------------------------------------------
-    # Highest Risk URLs
-    # -------------------------------------------------
+    # =====================================================
+    # HIGHEST RISK URLS
+    # =====================================================
+
+    elements.append(
+
+        Paragraph(
+
+            "<b>🔥 HIGHEST RISK URLS</b>",
+
+            styles["heading"]
+
+        )
+
+    )
+
+    elements.append(Spacer(1, 8))
+
+    threat_data = [
+
+        ["URL", "Risk Score", "Status"]
+
+    ]
+
+    if stats["top_threats"]:
+
+        for item in stats["top_threats"]:
+
+            threat_data.append([
+
+                item["url"],
+
+                item["risk_score"],
+
+                item["status"]
+
+            ])
+
+    else:
+
+        threat_data.append([
+
+            "No Data",
+
+            "-",
+
+            "-"
+
+        ])
+
+    threat_table = Table(
+
+        threat_data,
+
+        colWidths=[270, 70, 90]
+
+    )
+
+    threat_table.setStyle(
+
+        TableStyle([
+
+            ("BACKGROUND", (0,0), (-1,0), PRIMARY),
+
+            ("TEXTCOLOR", (0,0), (-1,0), colors.white),
+
+            ("FONTNAME", (0,0), (-1,0), "Helvetica-Bold"),
+
+            ("BOTTOMPADDING", (0,0), (-1,0), 10),
+
+            ("GRID", (0,0), (-1,-1), .5, colors.grey),
+
+            ("ROWBACKGROUNDS",
+
+                (0,1),
+
+                (-1,-1),
+
+                [LIGHT, ALT]
+
+            ),
+
+            ("ALIGN",
+
+                (1,1),
+
+                (-1,-1),
+
+                "CENTER"
+
+            ),
+
+        ])
+
+    )
+
+    elements.append(threat_table)
+
+    elements.append(Spacer(1, 0.35 * inch))
+
+        # =====================================================
+    # TOP SCANNED DOMAINS
+    # =====================================================
 
     elements.append(
         Paragraph(
-            "<b>🔥 HIGHEST RISK URLS</b>",
-            heading_style,
+            "<b>🌐 TOP SCANNED DOMAINS</b>",
+            styles["heading"]
         )
     )
 
-    elements.append(Spacer(1, 10))
+    elements.append(Spacer(1, 8))
 
-    threat_data = [
-        ["URL", "Risk Score", "Status"]
+    domain_data = [
+        ["Domain", "Scans"]
     ]
 
-    for item in stats["top_threats"]:
+    if stats["top_domains"]:
 
-        threat_data.append([
-            item["url"],
-            item["risk_score"],
-            item["status"]
+        for domain in stats["top_domains"]:
+
+            domain_data.append([
+                domain["domain"],
+                domain["count"]
+            ])
+
+    else:
+
+        domain_data.append([
+            "No Data",
+            "-"
         ])
 
-        threat_table = Table(
-            threat_data,
-            colWidths=[270, 70, 90]
+    domain_table = Table(
+        domain_data,
+        colWidths=[320, 110]
+    )
+
+    domain_table.setStyle(
+        TableStyle([
+
+            ("BACKGROUND",(0,0),(-1,0),PRIMARY),
+
+            ("TEXTCOLOR",(0,0),(-1,0),colors.white),
+
+            ("FONTNAME",(0,0),(-1,0),"Helvetica-Bold"),
+
+            ("GRID",(0,0),(-1,-1),0.5,colors.grey),
+
+            ("BOTTOMPADDING",(0,0),(-1,0),10),
+
+            ("ROWBACKGROUNDS",
+                (0,1),
+                (-1,-1),
+                [LIGHT,ALT]
+            ),
+
+            ("ALIGN",(1,1),(-1,-1),"CENTER")
+
+        ])
+    )
+
+    elements.append(domain_table)
+
+    elements.append(Spacer(1,0.35*inch))
+
+    # =====================================================
+    # RECENT ACTIVITY
+    # =====================================================
+
+    elements.append(
+        Paragraph(
+            "<b>🕒 RECENT ACTIVITY</b>",
+            styles["heading"]
         )
+    )
 
-        threat_table.setStyle(
+    elements.append(Spacer(1,8))
 
-           TableStyle([
+    activity_data = [
+        ["URL","Risk","Status","Scan Time"]
+    ]
 
-                ("BACKGROUND", (0,0), (-1,0), colors.HexColor("#1E3A8A")),
+    if stats["recent"]:
 
-                ("TEXTCOLOR", (0,0), (-1,0), colors.white),
-
-                ("FONTNAME", (0,0), (-1,0), "Helvetica-Bold"),
-
-                ("GRID", (0,0), (-1,-1), 0.5, colors.grey),
-
-                ("ALIGN", (1,1), (-1,-1), "CENTER"),
-
-                ("BOTTOMPADDING", (0,0), (-1,0), 10),
-
-                ("ROWBACKGROUNDS",
-                   (0,1),
-                   (-1,-1),
-                   [
-                       colors.whitesmoke,
-                       colors.beige
-                   ]
-                ),
-
-            ])
-
-        )
-
-        elements.append(threat_table)
-
-        elements.append(Spacer(1, 0.35 * inch))
-
-        # -------------------------------------------------
-        # Top Scanned Domains
-        # -------------------------------------------------
-
-        elements.append(
-            Paragraph(
-                "<b>🌐 TOP SCANNED DOMAINS</b>",
-                heading_style,
-            )
-        )
-
-        elements.append(Spacer(1, 10))
-
-        domain_data = [
-            ["Domain", "Total Scans"]
-        ]
-
-        if stats["top_domains"]:
-            for domain in stats["top_domains"]:
-                domain_data.append([
-                    domain["domain"],
-                    domain["count"]
-                ])
-        else:
-             domain_data.append([
-                 "No Data Available",
-                 "-"
-            ])
-
-        domain_table = Table(
-            domain_data,
-            colWidths=[320, 110]
-        )
-
-        domain_table.setStyle(
-
-            TableStyle([
-
-                ("BACKGROUND", (0,0), (-1,0), colors.HexColor("#1E3A8A")),
-
-                ("TEXTCOLOR", (0,0), (-1,0), colors.white),
-
-                ("FONTNAME", (0,0), (-1,0), "Helvetica-Bold"),
-
-                ("BOTTOMPADDING", (0,0), (-1,0), 10),
-
-                ("GRID", (0,0), (-1,-1), 0.5, colors.grey),
-
-                ("ROWBACKGROUNDS",
-                    (0,1),
-                    (-1,-1),
-                    [colors.whitesmoke, colors.beige]
-                ),
-
-                ("ALIGN", (1,1), (-1,-1), "CENTER")
-
-            ])
-
-        )
-
-        elements.append(domain_table)
-
-        elements.append(Spacer(1, 0.3 * inch))
-
-        # -------------------------------------------------
-        # Recent Activity
-        # -------------------------------------------------
-
-        elements.append(
-           Paragraph(
-              "<b>🕒 RECENT ACTIVITY</b>",
-              heading_style,
-            )
-        )
-
-        elements.append(Spacer(1, 10))
-
-        activity_data = [
-           ["URL", "Risk", "Status"]
-        ]
-
-        if stats["recent"]:
-
-            for item in stats["recent"]:
-
-                activity_data.append([
-                   item["url"],
-                   item["risk_score"],
-                   item["status"]
-                ])
-
-        else:
+        for item in stats["recent"]:
 
             activity_data.append([
-                "No Recent Activity",
-                "-",
-                "-"
-            ])
 
-        activity_table = Table(
-            activity_data,
-            colWidths=[250, 70, 110]
-        )
+                item["url"],
 
-        activity_table.setStyle(
+                item["risk_score"],
 
-           TableStyle([
+                item["status"],
 
-               ("BACKGROUND", (0,0), (-1,0), colors.HexColor("#1E3A8A")),
-
-               ("TEXTCOLOR", (0,0), (-1,0), colors.white),
-
-               ("FONTNAME", (0,0), (-1,0), "Helvetica-Bold"),
-
-               ("BOTTOMPADDING", (0,0), (-1,0), 10),
-
-               ("GRID", (0,0), (-1,-1), 0.5, colors.grey),
-
-               ("ROWBACKGROUNDS",
-                   (0,1),
-                   (-1,-1),
-                   [colors.whitesmoke, colors.beige]
-                ),
-
-                ("ALIGN", (1,1), (-1,-1), "CENTER")
+                str(item["scan_time"])
 
             ])
 
+    else:
+
+        activity_data.append([
+            "No Data",
+            "-",
+            "-",
+            "-"
+        ])
+
+    activity_table = Table(
+        activity_data,
+        colWidths=[220,55,80,105]
+    )
+
+    activity_table.setStyle(
+
+        TableStyle([
+
+            ("BACKGROUND",(0,0),(-1,0),PRIMARY),
+
+            ("TEXTCOLOR",(0,0),(-1,0),colors.white),
+
+            ("FONTNAME",(0,0),(-1,0),"Helvetica-Bold"),
+
+            ("GRID",(0,0),(-1,-1),0.5,colors.grey),
+
+            ("BOTTOMPADDING",(0,0),(-1,0),10),
+
+            ("ROWBACKGROUNDS",
+                (0,1),
+                (-1,-1),
+                [LIGHT,ALT]
+            ),
+
+            ("ALIGN",(1,1),(-1,-1),"CENTER")
+
+        ])
+
+    )
+
+    elements.append(activity_table)
+
+    elements.append(Spacer(1,0.4*inch))
+
+    # =====================================================
+    # SECURITY ASSESSMENT
+    # =====================================================
+
+    elements.append(
+        Paragraph(
+            "<b>📊 SECURITY ASSESSMENT</b>",
+            styles["heading"]
+        )
+    )
+
+    elements.append(Spacer(1,8))
+
+    assessment = f"""
+
+SentinelAI analyzed <b>{stats['total']}</b> URLs.
+
+Safe URLs : <b>{stats['safe']}</b><br/>
+
+Suspicious URLs : <b>{stats['suspicious']}</b><br/>
+
+Dangerous URLs : <b>{stats['dangerous']}</b><br/><br/>
+
+Average Risk Score :
+<b>{stats['avg_risk']}</b>
+
+"""
+
+    elements.append(
+        Paragraph(
+            assessment,
+            styles["body"]
+        )
+    )
+
+    elements.append(Spacer(1,0.3*inch))
+
+    # =====================================================
+    # RECOMMENDATIONS
+    # =====================================================
+
+    elements.append(
+        Paragraph(
+            "<b>💡 SECURITY RECOMMENDATIONS</b>",
+            styles["heading"]
+        )
+    )
+
+    elements.append(Spacer(1,8))
+
+    recommendations=[]
+
+    if stats["dangerous"]>=5:
+
+        recommendations.extend([
+
+            "• Immediate action is recommended.",
+
+            "• Block malicious domains.",
+
+            "• Perform endpoint investigation.",
+
+            "• Notify administrators."
+
+        ])
+
+    elif stats["dangerous"]>0:
+
+        recommendations.extend([
+
+            "• Investigate dangerous URLs.",
+
+            "• Continue monitoring."
+
+        ])
+
+    else:
+
+        recommendations.extend([
+
+            "• No major threats detected.",
+
+            "• Continue periodic monitoring."
+
+        ])
+
+    if stats["suspicious"]>0:
+
+        recommendations.append(
+
+            "• Review suspicious URLs manually."
+
         )
 
-        elements.append(activity_table)
-
-        elements.append(Spacer(1, 0.35 * inch))
-
-        # -------------------------------------------------
-        # Security Assessment
-        # -------------------------------------------------
-
-        elements.append(
-           Paragraph(
-               "<b>📊 SECURITY ASSESSMENT</b>",
-               heading_style,
-            )
-        )
-
-        elements.append(Spacer(1, 8))
-
-        assessment = f"""
-        This report summarizes the URL security analysis performed by SentinelAI.
-
-        A total of <b>{stats['total']}</b> URLs were analyzed.
-
-        Out of these:
-
-        • <b>{stats['safe']}</b> Safe URLs
-
-        • <b>{stats['suspicious']}</b> Suspicious URLs
-
-        • <b>{stats['dangerous']}</b> Dangerous URLs
-
-        The overall average risk score is
-        <b>{stats['avg_risk']}</b>,
-        resulting in an overall threat level of
-        <b>{level}</b>.
-        """
-
-        elements.append(
-           Paragraph(
-               assessment,
-               normal
-            )
-        )
-
-        elements.append(Spacer(1, 0.25 * inch))
-
-        # -------------------------------------------------
-        # Recommendations
-        # -------------------------------------------------
+    for text in recommendations:
 
         elements.append(
             Paragraph(
-               "<b>💡 SECURITY RECOMMENDATIONS</b>",
-               heading_style,
+                text,
+                styles["body"]
             )
         )
 
-        recommendations = []
+    elements.append(Spacer(1,0.35*inch))
 
-        if stats["dangerous"] > 0:
+    # =====================================================
+    # FOOTER
+    # =====================================================
 
-            recommendations.extend([
+    elements.append(
 
-                "• Immediately investigate all dangerous URLs.",
+        HRFlowable(
 
-                "• Block malicious domains at the firewall.",
+            width="100%",
 
-                "• Review affected systems for compromise.",
+            thickness=1,
 
-                "• Inform security administrators.",
+            color=colors.grey
 
-            ])
-
-        if stats["suspicious"] > 0:
-
-            recommendations.extend([
-
-                 "• Continue monitoring suspicious URLs.",
-
-                 "• Perform additional reputation checks.",
-
-            ])
-
-        if stats["dangerous"] == 0 and stats["suspicious"] == 0:
-
-            recommendations.extend([
-
-                "• No significant threats detected.",
-
-                "• Continue periodic monitoring.",
-
-                "• Maintain updated threat intelligence feeds.",
-
-            ])
-
-        for recommendation in recommendations:
-
-            elements.append(
-                Paragraph(
-                    recommendation,
-                    normal
-                )
-            )
-
-        elements.append(
-            Spacer(1, 0.35 * inch)
         )
 
-        # -------------------------------------------------
-        # FOOTER
-        # -------------------------------------------------
+    )
 
-        elements.append(
-           HRFlowable(
-               width="100%",
-               thickness=1,
-               color=colors.grey,
-            )
+    elements.append(Spacer(1,8))
+
+    elements.append(
+
+        Paragraph(
+
+            "<b>Generated by SentinelAI</b>",
+
+            styles["footer"]
+
         )
 
-        elements.append(
-            Spacer(1, 8)
+    )
+
+    elements.append(
+
+        Paragraph(
+
+            "AI-Powered Cyber Fraud Early Warning Platform",
+
+            styles["footer"]
+
         )
 
-        footer_style = styles["BodyText"]
-        footer_style.alignment = TA_CENTER
-        footer_style.textColor = colors.grey
+    )
 
-        elements.append(
-            Paragraph(
-                "<b>Generated by SentinelAI</b>",
-                footer_style
-            )
+    elements.append(
+
+        Paragraph(
+
+            "Version 1.0",
+
+            styles["footer"]
+
         )
 
-        elements.append(
-            Paragraph(
-                "AI-Powered Cyber Fraud Early Warning Platform",
-                 footer_style
-            )
-        )
-
-        elements.append(
-            Paragraph(
-                "Version 1.0",
-                footer_style
-            )
-        )
-
+    )
 
     doc.build(
+
         elements,
+
         onFirstPage=add_page_number,
-        onLaterPages=add_page_number,
+
+        onLaterPages=add_page_number
+
     )
 
     buffer.seek(0)

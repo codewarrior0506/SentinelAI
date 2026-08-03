@@ -5,6 +5,7 @@ import socket
 from app.services.whois_service import get_domain_info
 from app.services.virustotal_service import analyze_url_with_virustotal
 from app.services.history_service import save_scan
+from app.services.ioc_service import analyze_iocs
 
 
 SUSPICIOUS_KEYWORDS = [
@@ -41,7 +42,10 @@ def analyze_url(url):
     # -------------------------
 
     https = parsed.scheme.lower() == "https"
-    risk_score = 0
+
+    ioc_result = analyze_iocs(url)
+
+    risk_score = ioc_result["ioc_score"]
 
     # -------------------------
     # Resolve IP Address
@@ -66,70 +70,6 @@ def analyze_url(url):
 
     vt_result = analyze_url_with_virustotal(url)
 
-    # -------------------------
-    # HTTPS Check
-    # -------------------------
-
-    if not https:
-        risk_score += 20
-
-    # -------------------------
-    # URL Length
-    # -------------------------
-
-    if len(url) > 75:
-        risk_score += 10
-
-    # -------------------------
-    # @ Symbol
-    # -------------------------
-
-    if "@" in url:
-        risk_score += 25
-
-    # -------------------------
-    # Double Slash
-    # -------------------------
-
-    if "//" in parsed.path:
-        risk_score += 15
-
-    # -------------------------
-    # IP Address instead of Domain
-    # -------------------------
-
-    uses_ip = False
-
-    try:
-        ipaddress.ip_address(domain)
-        uses_ip = True
-        risk_score += 30
-
-    except ValueError:
-        pass
-
-    # -------------------------
-    # Subdomains
-    # -------------------------
-
-    subdomain_count = max(0, len(domain.split(".")) - 2)
-
-    if subdomain_count >= 2:
-        risk_score += 10
-
-    # -------------------------
-    # Suspicious Keywords
-    # -------------------------
-
-    found_keywords = []
-
-    full_url = url.lower()
-
-    for keyword in SUSPICIOUS_KEYWORDS:
-        if keyword in full_url:
-            found_keywords.append(keyword)
-
-    risk_score += len(found_keywords) * 5
 
     # -------------------------
     # Domain Age
@@ -196,6 +136,7 @@ def analyze_url(url):
         domain_age=whois_info.get("domain_age"),
         vt_malicious=vt_result.get("malicious", 0),
         vt_suspicious=vt_result.get("suspicious", 0)
+        
     )
 
     # -------------------------
@@ -218,12 +159,6 @@ def analyze_url(url):
 
         "dns_status": dns_status,
 
-        "uses_ip": uses_ip,
-
-        "subdomains": subdomain_count,
-
-        "keywords": found_keywords,
-
         "registrar": whois_info.get("registrar"),
 
         "creation_date": whois_info.get("creation_date"),
@@ -242,6 +177,10 @@ def analyze_url(url):
 
         "vt_undetected": vt_result.get("undetected", 0),
 
+        "ioc_score": ioc_result["ioc_score"],
+
+        "ioc_findings": ioc_result["ioc_findings"],
+
         "risk_score": risk_score,
 
         "status": status,
@@ -249,3 +188,5 @@ def analyze_url(url):
         "recommendation": recommendation
 
     }
+
+    

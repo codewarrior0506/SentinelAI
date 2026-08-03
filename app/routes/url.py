@@ -14,13 +14,14 @@ def url_analyzer():
     if request.method == "POST":
 
         submitted_url = request.form.get("url")
+
         result = analyze_url(submitted_url)
 
-        user_url = request.form.get("url")
-        result = analyze_url(user_url)
+        print("IOC Score:", result["ioc_score"])
+        print("IOC Findings:", result["ioc_findings"])
 
     return render_template(
-    "url_analyzer.html",
-    result=result,
-    submitted_url=submitted_url
-)
+        "url_analyzer.html",
+        result=result,
+        submitted_url=submitted_url
+    )
